@@ -105,6 +105,7 @@
       display: flex;
       border-bottom: 2px solid var(--border-color);
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     .tab-btn {
@@ -234,6 +235,33 @@
       color: #f39c12;
       border: 1px solid #f39c12;
     }
+
+    /* Live Class Highlight CSS Rules */
+    .active-day-row {
+      background-color: #f4fbf7 !important;
+    }
+
+    .live-class-active {
+      background-color: #d4edda !important;
+      color: #155724 !important;
+      font-weight: bold !important;
+      border: 2px solid #28a745 !important;
+      box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+      position: relative;
+    }
+
+    .live-indicator-badge {
+      display: block;
+      background-color: #28a745;
+      color: white;
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
   </style>
 
   <!-- Firebase Compatibility SDKs -->
@@ -285,6 +313,7 @@
       <div id="teacher-portal" class="hidden">
         <div class="nav-tabs">
           <button class="tab-btn active" onclick="switchTab('schedule-tab', this)">Class Schedule</button>
+          <button class="tab-btn" onclick="switchTab('live-class-teacher-tab', this); renderLiveClassView('teacher');">Live Class View</button>
           <button class="tab-btn" onclick="switchTab('lesson-plan-tab', this)">Submit Lesson Plan</button>
           <button class="tab-btn" onclick="switchTab('view-lesson-plans-tab', this)">Weekly Lesson Plan View</button>
         </div>
@@ -315,7 +344,32 @@
           </div>
         </div>
 
-        <!-- Tab 2: Submit Lesson Plan -->
+        <!-- Teacher Live Class Tab -->
+        <div id="live-class-teacher-tab" class="tab-content">
+          <h3>Live Class Status</h3>
+          <p id="live-status-time-teacher" style="font-weight:600; color: var(--accent-color);"></p>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Day / Period</th>
+                  <th>Period 1<br><small>8:10-8:50</small></th>
+                  <th>Period 2<br><small>8:50-9:30</small></th>
+                  <th>Period 3<br><small>9:40-10:20</small></th>
+                  <th>Period 4<br><small>10:20-11:00</small></th>
+                  <th>Period 5<br><small>11:00-11:40</small></th>
+                  <th>Period 6<br><small>12:00-12:40</small></th>
+                  <th>Period 7<br><small>12:40-1:20</small></th>
+                  <th>Period 8<br><small>1:20-2:00</small></th>
+                  <th>Period 9<br><small>2:00-2:40</small></th>
+                </tr>
+              </thead>
+              <tbody id="live-schedule-table-body-teacher"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Submit Lesson Plan -->
         <div id="lesson-plan-tab" class="tab-content">
           <h3>Submit Weekly Lesson Plan</h3>
           <form id="lesson-plan-form" onsubmit="handlePlanSubmit(event)">
@@ -384,7 +438,7 @@
           </form>
         </div>
 
-        <!-- Tab 3: Weekly Lesson Plan View -->
+        <!-- Tab: Weekly Lesson Plan View -->
         <div id="view-lesson-plans-tab" class="tab-content">
           <h3>Saved Weekly Lesson Plans View</h3>
           <div class="form-group">
@@ -408,6 +462,7 @@
       <div id="hod-portal" class="hidden">
         <div class="nav-tabs">
           <button class="tab-btn active" onclick="switchHodTab('hod-verify-tab', this)">Plan Verification</button>
+          <button class="tab-btn" onclick="switchHodTab('hod-live-class-tab', this); renderLiveClassView('hod');">Live Class View</button>
           <button class="tab-btn" onclick="switchHodTab('hod-setup-tab', this)">Teacher Setup</button>
           <button class="tab-btn" onclick="switchHodTab('hod-schedule-tab', this)">Weekly Schedule Setup</button>
         </div>
@@ -424,6 +479,40 @@
           </div>
 
           <div id="hod-records-container"></div>
+        </div>
+
+        <!-- HOD Live Class Tab -->
+        <div id="hod-live-class-tab" class="tab-content">
+          <h3>Department Live Class Monitoring</h3>
+          
+          <div class="form-group">
+            <label for="live-hod-teacher-select">Select Teacher to View Live Class Status:</label>
+            <select id="live-hod-teacher-select" onchange="renderLiveClassView('hod')">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <p id="live-status-time-hod" style="font-weight:600; color: var(--accent-color);"></p>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Day / Period</th>
+                  <th>Period 1<br><small>8:10-8:50</small></th>
+                  <th>Period 2<br><small>8:50-9:30</small></th>
+                  <th>Period 3<br><small>9:40-10:20</small></th>
+                  <th>Period 4<br><small>10:20-11:00</small></th>
+                  <th>Period 5<br><small>11:00-11:40</small></th>
+                  <th>Period 6<br><small>12:00-12:40</small></th>
+                  <th>Period 7<br><small>12:40-1:20</small></th>
+                  <th>Period 8<br><small>1:20-2:00</small></th>
+                  <th>Period 9<br><small>2:00-2:40</small></th>
+                </tr>
+              </thead>
+              <tbody id="live-schedule-table-body-hod"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- HOD Tab 2: Teacher Setup -->
@@ -498,9 +587,12 @@
 
         <!-- HOD Tab 3: Weekly Schedule Setup Matrix -->
         <div id="hod-schedule-tab" class="tab-content">
-          <h3>Weekly Schedule Setup Matrix (9 Periods Schedule)</h3>
+          <div class="action-header" style="margin-top:0;">
+            <h3>Weekly Schedule Setup Matrix</h3>
+            <button type="button" class="success" onclick="exportScheduleMatrixToCSV()">Export Schedule Matrix (.CSV)</button>
+          </div>
           
-          <div class="form-group">
+          <div class="form-group" style="margin-top: 15px;">
             <label for="matrix-teacher-select">Select Teacher to Edit Weekly Matrix:</label>
             <select id="matrix-teacher-select" onchange="loadMatrixForSelectedTeacher()">
               <!-- Dynamically populated -->
@@ -562,6 +654,19 @@
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const periodCount = 9;
 
+    // Period timings array in minutes from midnight for live checking
+    const periodTimings = [
+      { p: 1, start: 8 * 60 + 10, end: 8 * 60 + 50 },  // 8:10 - 8:50
+      { p: 2, start: 8 * 60 + 50, end: 9 * 60 + 30 },  // 8:50 - 9:30
+      { p: 3, start: 9 * 60 + 40, end: 10 * 60 + 20 }, // 9:40 - 10:20
+      { p: 4, start: 10 * 60 + 20, end: 11 * 60 + 0 }, // 10:20 - 11:00
+      { p: 5, start: 11 * 60 + 0, end: 11 * 60 + 40 }, // 11:00 - 11:40
+      { p: 6, start: 12 * 60 + 0, end: 12 * 60 + 40 }, // 12:00 - 12:40
+      { p: 7, start: 12 * 60 + 40, end: 13 * 60 + 20 },// 12:40 - 1:20
+      { p: 8, start: 13 * 60 + 20, end: 14 * 60 + 0 }, // 1:20 - 2:00
+      { p: 9, start: 14 * 60 + 0, end: 14 * 60 + 40 }  // 2:00 - 2:40
+    ];
+
     let defaultTeachers = [
       { salutation: "Mr.", name: "Alan Turing", fullName: "Mr. Alan Turing", classes: "9, 10" },
       { salutation: "Dr.", name: "Srinivasa Ramanujan", fullName: "Dr. Srinivasa Ramanujan", classes: "11, 12" },
@@ -610,16 +715,19 @@
     function populateTeacherDropdowns() {
       const loginSelect = document.getElementById('login-teacher-name');
       const hodSelect = document.getElementById('hod-teacher-select');
+      const liveHodSelect = document.getElementById('live-hod-teacher-select');
       const matrixSelect = document.getElementById('matrix-teacher-select');
 
       loginSelect.innerHTML = '';
       hodSelect.innerHTML = '';
+      liveHodSelect.innerHTML = '';
       matrixSelect.innerHTML = '';
 
       localTeachers.forEach(t => {
         const displayName = t.fullName || `${t.salutation ? t.salutation + ' ' : ''}${t.name}`;
         loginSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
         hodSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
+        liveHodSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
         matrixSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
       });
     }
@@ -703,6 +811,81 @@
       
       document.getElementById(tabId).classList.add('active');
       btn.classList.add('active');
+    }
+
+    // --- LIVE CLASS HIGHLIGHTING SYSTEM ---
+    function getCurrentTimeAndDayInfo() {
+      const now = new Date();
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const currentDay = dayNames[now.getDay()];
+      
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      let activePeriod = null;
+      for (let item of periodTimings) {
+        if (currentMinutes >= item.start && currentMinutes < item.end) {
+          activePeriod = item.p;
+          break;
+        }
+      }
+
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return { currentDay, activePeriod, timeStr };
+    }
+
+    function renderLiveClassView(viewType) {
+      let targetTeacher = currentUser;
+      let targetTbodyId = 'live-schedule-table-body-teacher';
+      let statusTimeId = 'live-status-time-teacher';
+
+      if (viewType === 'hod') {
+        targetTeacher = document.getElementById('live-hod-teacher-select').value;
+        targetTbodyId = 'live-schedule-table-body-hod';
+        statusTimeId = 'live-status-time-hod';
+      }
+
+      const tbody = document.getElementById(targetTbodyId);
+      tbody.innerHTML = '';
+
+      const { currentDay, activePeriod, timeStr } = getCurrentTimeAndDayInfo();
+
+      let statusMsg = `Current System Time: ${timeStr} | Day: ${currentDay}`;
+      if (activePeriod) {
+        statusMsg += ` | Active Period: Period ${activePeriod}`;
+      } else {
+        statusMsg += ` | Status: Outside Regular Class Hours / Break`;
+      }
+      document.getElementById(statusTimeId).innerText = statusMsg;
+
+      const cleanKey = (targetTeacher || '').replace(/[.#$/[\]]/g, '_');
+      const savedMatrix = localMatrixSchedules[cleanKey] || {};
+
+      daysOfWeek.forEach(day => {
+        const isToday = (day === currentDay);
+        const tr = document.createElement('tr');
+        if (isToday) tr.className = 'active-day-row';
+
+        let rowHtml = `<td><strong>${day}${isToday ? ' (Today)' : ''}</strong></td>`;
+
+        for (let p = 1; p <= periodCount; p++) {
+          const cls = savedMatrix[`${day}_p${p}_class`] || 'Free';
+          const isLiveCell = isToday && (p === activePeriod);
+
+          if (isLiveCell) {
+            rowHtml += `
+              <td class="live-class-active">
+                <span class="live-indicator-badge">● ONGOING CLASS</span>
+                ${cls}
+              </td>
+            `;
+          } else {
+            rowHtml += `<td>${cls}</td>`;
+          }
+        }
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+      });
     }
 
     function generateDynamicPeriodRows() {
@@ -1019,6 +1202,39 @@
       document.body.removeChild(link);
     }
 
+    // EXPORT SCHEDULE MATRIX TO CSV FUNCTION
+    function exportScheduleMatrixToCSV() {
+      if (Object.keys(localMatrixSchedules).length === 0) {
+        alert('No weekly schedules found to export.');
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,Teacher Name,Day,P1 (8:10-8:50),P2 (8:50-9:30),P3 (9:40-10:20),P4 (10:20-11:00),P5 (11:00-11:40),P6 (12:00-12:40),P7 (12:40-1:20),P8 (1:20-2:00),P9 (2:00-2:40)\n";
+
+      localTeachers.forEach(t => {
+        const teacherName = t.fullName || `${t.salutation || ''} ${t.name}`;
+        const cleanKey = teacherName.replace(/[.#$/[\]]/g, '_');
+        const matrix = localMatrixSchedules[cleanKey] || {};
+
+        daysOfWeek.forEach(day => {
+          let row = `"${teacherName}","${day}"`;
+          for (let p = 1; p <= periodCount; p++) {
+            const cls = matrix[`${day}_p${p}_class`] || 'Free';
+            row += `,"${cls}"`;
+          }
+          csvContent += row + "\n";
+        });
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Weekly_Schedules_Matrix.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     function loadMatrixForSelectedTeacher() {
       const teacherName = document.getElementById('matrix-teacher-select').value;
       if (!teacherName) return;
@@ -1099,27 +1315,19 @@
       });
     }
 
+    // Refresh live class view dynamically every minute
+    setInterval(() => {
+      if (!document.getElementById('portal-view').classList.contains('hidden')) {
+        if (currentRole === 'hod') {
+          renderLiveClassView('hod');
+        } else {
+          renderLiveClassView('teacher');
+        }
+      }
+    }, 60000);
+
     window.onload = initData;
   </script>
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyBguW-1Yztzy7CmKMaQZz57Zmj8ASdQ1Ig",
-    authDomain: "math-department-app.firebaseapp.com",
-    databaseURL: "https://math-department-app-default-rtdb.firebaseio.com",
-    projectId: "math-department-app",
-    storageBucket: "math-department-app.firebasestorage.app",
-    messagingSenderId: "982590706030",
-    appId: "1:982590706030:web:f02ac32449b2d859fab17f"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
 </body>
 </html>
