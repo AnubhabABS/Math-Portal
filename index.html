@@ -236,7 +236,6 @@
       border: 1px solid #f39c12;
     }
 
-    /* Live Class Highlight CSS Rules */
     .active-day-row {
       background-color: #f4fbf7 !important;
     }
@@ -283,11 +282,17 @@
         </select>
       </div>
 
-      <div id="teacher-login-group" class="form-group">
-        <label for="login-teacher-name">Select Math Teacher's Name:</label>
-        <select id="login-teacher-name">
-          <!-- Populated dynamically -->
-        </select>
+      <div id="teacher-login-group">
+        <div class="form-group">
+          <label for="login-teacher-name">Select Math Teacher's Name:</label>
+          <select id="login-teacher-name">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="teacher-password">Enter Teacher Password (if set):</label>
+          <input type="password" id="teacher-password" placeholder="Leave empty if password not set yet">
+        </div>
       </div>
 
       <div id="hod-password-group" class="form-group hidden">
@@ -318,7 +323,7 @@
           <button class="tab-btn" onclick="switchTab('view-lesson-plans-tab', this)">Weekly Lesson Plan View</button>
         </div>
 
-        <!-- Tab 1: Class Schedule -->
+        <!-- Tab 1: Class Schedule & Security -->
         <div id="schedule-tab" class="tab-content active">
           <h3>Your Timetable Schedule</h3>
           <div class="table-responsive">
@@ -341,6 +346,22 @@
                 <!-- Dynamically populated -->
               </tbody>
             </table>
+          </div>
+
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border-color);">
+
+          <!-- Teacher Password Security Card -->
+          <h4>Teacher Security Settings</h4>
+          <div class="card">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="new-teacher-password">Set / Update Password:</label>
+                <input type="password" id="new-teacher-password" placeholder="Enter new account password">
+              </div>
+              <div class="form-group" style="align-self: end;">
+                <button type="button" class="success" onclick="updateTeacherPassword()">Update Password</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -649,12 +670,12 @@
     let localTeachers = [];
     let localLessonPlans = [];
     let localMatrixSchedules = {};
+    let localTeacherPasswords = {};
     let hodPassword = 'admin123';
 
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const periodCount = 9;
 
-    // Period timings array in minutes from midnight for live checking
     const periodTimings = [
       { p: 1, start: 8 * 60 + 10, end: 8 * 60 + 50 },  // 8:10 - 8:50
       { p: 2, start: 8 * 60 + 50, end: 9 * 60 + 30 },  // 8:50 - 9:30
@@ -710,6 +731,11 @@
       db.ref('hod_password').on('value', (snapshot) => {
         hodPassword = snapshot.val() || 'admin123';
       });
+
+      // Listen to Teacher Passwords in Cloud
+      db.ref('teacher_passwords').on('value', (snapshot) => {
+        localTeacherPasswords = snapshot.val() || {};
+      });
     }
 
     function populateTeacherDropdowns() {
@@ -750,11 +776,23 @@
       currentRole = document.getElementById('role-select').value;
       
       if (currentRole === 'teacher') {
-        currentUser = document.getElementById('login-teacher-name').value;
+        const selectedTeacher = document.getElementById('login-teacher-name').value;
+        const enteredPassword = document.getElementById('teacher-password').value;
+        const cleanKey = selectedTeacher.replace(/[.#$/[\]]/g, '_');
+        const setPassword = localTeacherPasswords[cleanKey];
+
+        // Check if teacher has set a password
+        if (setPassword && setPassword !== enteredPassword) {
+          alert('Incorrect Password for ' + selectedTeacher + '!');
+          return;
+        }
+
+        currentUser = selectedTeacher;
         document.getElementById('user-greeting').innerText = `Teacher: ${currentUser}`;
         document.getElementById('user-role-display').innerText = "Mathematics Department - Faculty View";
         document.getElementById('teacher-portal').classList.remove('hidden');
         document.getElementById('hod-portal').classList.add('hidden');
+        document.getElementById('teacher-password').value = '';
         renderTeacherSchedule(currentUser);
         renderTeacherSavedPlans();
       } else {
@@ -778,6 +816,24 @@
 
       document.getElementById('login-view').classList.add('hidden');
       document.getElementById('portal-view').classList.remove('hidden');
+    }
+
+    function updateTeacherPassword() {
+      const newPassword = document.getElementById('new-teacher-password').value.trim();
+      if (!newPassword) {
+        alert('Please enter a valid password.');
+        return;
+      }
+
+      const cleanKey = currentUser.replace(/[.#$/[\]]/g, '_');
+      db.ref(`teacher_passwords/${cleanKey}`).set(newPassword, (error) => {
+        if (!error) {
+          alert('Password updated successfully!');
+          document.getElementById('new-teacher-password').value = '';
+        } else {
+          alert('Error setting password: ' + error.message);
+        }
+      });
     }
 
     function updateHodPassword() {
@@ -1202,7 +1258,6 @@
       document.body.removeChild(link);
     }
 
-    // EXPORT SCHEDULE MATRIX TO CSV FUNCTION
     function exportScheduleMatrixToCSV() {
       if (Object.keys(localMatrixSchedules).length === 0) {
         alert('No weekly schedules found to export.');
