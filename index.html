@@ -9,6 +9,7 @@
       --primary-color: #2c3e50;
       --secondary-color: #27ae60;
       --accent-color: #2980b9;
+      --danger-color: #e74c3c;
       --light-bg: #f8f9fa;
       --border-color: #dee2e6;
     }
@@ -22,7 +23,7 @@
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 1250px;
       margin: 0 auto;
       background: #fff;
       padding: 25px;
@@ -90,6 +91,14 @@
 
     button.success:hover {
       background-color: #1e8449;
+    }
+
+    button.danger {
+      background-color: var(--danger-color);
+    }
+
+    button.danger:hover {
+      background-color: #c0392b;
     }
 
     button.secondary {
@@ -184,12 +193,14 @@
     .checkbox-container {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      gap: 5px;
     }
 
     .checkbox-container input {
       width: auto;
       transform: scale(1.2);
+      cursor: pointer;
     }
 
     .cell-select {
@@ -230,12 +241,6 @@
       border: 1px solid #27ae60;
     }
 
-    .badge-warning {
-      background-color: #fef9e7;
-      color: #f39c12;
-      border: 1px solid #f39c12;
-    }
-
     .active-day-row {
       background-color: #f4fbf7 !important;
     }
@@ -260,6 +265,87 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       text-align: center;
+    }
+
+    .summary-card {
+      margin-top: 20px;
+      background: #f8f9fa;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 15px;
+    }
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    .summary-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .summary-badge-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .summary-badge-btn:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .summary-badge-btn span {
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    .summary-badge-btn.active-filter {
+      background-color: #fef08a;
+      border-color: #eab308;
+      color: #854d0e;
+      font-weight: bold;
+    }
+
+    .summary-badge-btn.active-filter span {
+      color: #854d0e;
+    }
+
+    .highlight-selected-class {
+      background-color: #fef08a !important;
+      color: #854d0e !important;
+      font-weight: bold !important;
+      border: 2px solid #eab308 !important;
+      box-shadow: 0 0 6px rgba(234, 179, 8, 0.4);
+    }
+
+    .total-load-badge {
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      color: #0369a1;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .hod-input-cell {
+      font-size: 12px;
+      padding: 5px;
+      resize: vertical;
+      min-height: 40px;
     }
   </style>
 
@@ -317,15 +403,20 @@
       <!-- TEACHER VIEW -->
       <div id="teacher-portal" class="hidden">
         <div class="nav-tabs">
-          <button class="tab-btn active" onclick="switchTab('schedule-tab', this)">Class Schedule</button>
+          <button class="tab-btn active" onclick="switchTab('schedule-tab', this)">Class Schedule Setup</button>
           <button class="tab-btn" onclick="switchTab('live-class-teacher-tab', this); renderLiveClassView('teacher');">Live Class View</button>
-          <button class="tab-btn" onclick="switchTab('lesson-plan-tab', this)">Submit Lesson Plan</button>
+          <button class="tab-btn" onclick="switchTab('lesson-plan-tab', this); setupLessonPlanClassOptions();">Submit Lesson Plan</button>
           <button class="tab-btn" onclick="switchTab('view-lesson-plans-tab', this)">Weekly Lesson Plan View</button>
         </div>
 
-        <!-- Tab 1: Class Schedule & Security -->
+        <!-- Tab 1: Class Schedule Setup -->
         <div id="schedule-tab" class="tab-content active">
-          <h3>Your Timetable Schedule</h3>
+          <div class="action-header" style="margin-top: 0;">
+            <h3>Your Weekly Schedule Setup</h3>
+            <button type="button" class="success" onclick="saveTeacherSchedule()">Save Weekly Schedule</button>
+          </div>
+          <p style="color:#666; font-size:13px; margin-bottom: 15px;">Configure your weekly timetable by selecting the classes and sections assigned to you for each period.</p>
+
           <div class="table-responsive">
             <table>
               <thead>
@@ -350,7 +441,6 @@
 
           <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border-color);">
 
-          <!-- Teacher Password Security Card -->
           <h4>Teacher Security Settings</h4>
           <div class="card">
             <div class="form-grid">
@@ -388,6 +478,8 @@
               <tbody id="live-schedule-table-body-teacher"></tbody>
             </table>
           </div>
+
+          <div id="live-summary-teacher" class="summary-card"></div>
         </div>
 
         <!-- Tab: Submit Lesson Plan -->
@@ -396,8 +488,13 @@
           <form id="lesson-plan-form" onsubmit="handlePlanSubmit(event)">
             <div class="form-grid">
               <div class="form-group">
+                <label for="plan-month">Select Month (Calendar Picker):</label>
+                <input type="month" id="plan-month" required>
+              </div>
+
+              <div class="form-group">
                 <label for="plan-week">Select Week:</label>
-                <select id="plan-week" required>
+                <select id="plan-week" onchange="fetchSchedulePeriodsForPlan()" required>
                   <option value="Week 1">Week 1</option>
                   <option value="Week 2">Week 2</option>
                   <option value="Week 3">Week 3</option>
@@ -406,72 +503,44 @@
                 </select>
               </div>
 
-              <div class="form-group">
-                <label for="plan-class">Class:</label>
-                <select id="plan-class" required>
-                  <option value="Class 1">Class 1</option>
-                  <option value="Class 2">Class 2</option>
-                  <option value="Class 3">Class 3</option>
-                  <option value="Class 4">Class 4</option>
-                  <option value="Class 5">Class 5</option>
-                  <option value="Class 6">Class 6</option>
-                  <option value="Class 7">Class 7</option>
-                  <option value="Class 8">Class 8</option>
-                  <option value="Class 9">Class 9</option>
-                  <option value="Class 10">Class 10</option>
-                  <option value="Class 11">Class 11</option>
-                  <option value="Class 12">Class 12</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="plan-section">Section / Stream:</label>
-                <select id="plan-section" required>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                  <option value="Science">Science</option>
-                  <option value="Commerce A">Commerce A</option>
-                  <option value="Commerce B">Commerce B</option>
-                  <option value="Humanities">Humanities</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="plan-periods">Number of Periods Required:</label>
-                <select id="plan-periods" onchange="generateDynamicPeriodRows()" required>
-                  <option value="">-- Select Periods --</option>
-                  <option value="1">1 Period</option>
-                  <option value="2">2 Periods</option>
-                  <option value="3">3 Periods</option>
-                  <option value="4">4 Periods</option>
-                  <option value="5">5 Periods</option>
-                  <option value="6">6 Periods</option>
-                  <option value="7">7 Periods</option>
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="plan-class-section">Select Allocated Class & Section:</label>
+                <select id="plan-class-section" onchange="fetchSchedulePeriodsForPlan()" required>
+                  <!-- Populated dynamically -->
                 </select>
               </div>
             </div>
 
             <div id="dynamic-period-rows"></div>
 
-            <button type="submit" class="success" style="margin-top: 10px;">Upload Lesson Plan</button>
+            <button type="submit" id="submit-plan-btn" class="success" style="margin-top: 15px;" disabled>Upload Lesson Plan</button>
           </form>
         </div>
 
-        <!-- Tab: Weekly Lesson Plan View -->
+        <!-- Tab: Weekly Lesson Plan View (Teacher) -->
         <div id="view-lesson-plans-tab" class="tab-content">
-          <h3>Saved Weekly Lesson Plans View</h3>
-          <div class="form-group">
-            <label for="view-plan-week">Filter by Week:</label>
-            <select id="view-plan-week" onchange="renderTeacherSavedPlans()">
-              <option value="All">All Weeks</option>
-              <option value="Week 1">Week 1</option>
-              <option value="Week 2">Week 2</option>
-              <option value="Week 3">Week 3</option>
-              <option value="Week 4">Week 4</option>
-              <option value="Week 5">Week 5</option>
-            </select>
+          <div class="action-header" style="margin-top:0;">
+            <h3>Saved Lesson Plans View</h3>
+            <button type="button" class="success" onclick="exportLessonPlansCSV('teacher')">Download/Save Monthly Plan (.CSV)</button>
+          </div>
+
+          <div class="form-grid" style="margin-top: 15px;">
+            <div class="form-group">
+              <label for="view-plan-month">Filter by Month (Calendar Picker):</label>
+              <input type="month" id="view-plan-month" onchange="renderTeacherSavedPlans()">
+            </div>
+
+            <div class="form-group">
+              <label for="view-plan-week">Filter by Week:</label>
+              <select id="view-plan-week" onchange="renderTeacherSavedPlans()">
+                <option value="All">All Weeks</option>
+                <option value="Week 1">Week 1</option>
+                <option value="Week 2">Week 2</option>
+                <option value="Week 3">Week 3</option>
+                <option value="Week 4">Week 4</option>
+                <option value="Week 5">Week 5</option>
+              </select>
+            </div>
           </div>
 
           <div id="teacher-saved-plans-container"></div>
@@ -485,18 +554,39 @@
           <button class="tab-btn active" onclick="switchHodTab('hod-verify-tab', this)">Plan Verification</button>
           <button class="tab-btn" onclick="switchHodTab('hod-live-class-tab', this); renderLiveClassView('hod');">Live Class View</button>
           <button class="tab-btn" onclick="switchHodTab('hod-setup-tab', this)">Teacher Setup</button>
-          <button class="tab-btn" onclick="switchHodTab('hod-schedule-tab', this)">Weekly Schedule Setup</button>
         </div>
 
         <!-- HOD Tab 1: Verification -->
         <div id="hod-verify-tab" class="tab-content active">
-          <h3>Department Verification Dashboard</h3>
-          
-          <div class="form-group">
-            <label for="hod-teacher-select">Select Teacher to View Lesson Plans:</label>
-            <select id="hod-teacher-select" onchange="renderHodView()">
-              <!-- Dynamically populated -->
-            </select>
+          <div class="action-header" style="margin-top:0;">
+            <h3>Department Verification Dashboard</h3>
+            <button type="button" class="success" onclick="exportLessonPlansCSV('hod')">Download/Save Monthly Plan (.CSV)</button>
+          </div>
+
+          <div class="form-grid" style="margin-top:15px;">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="hod-teacher-select">Select Teacher to View Lesson Plans:</label>
+              <select id="hod-teacher-select" onchange="renderHodView()">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="hod-plan-month">Filter by Month (Calendar Picker):</label>
+              <input type="month" id="hod-plan-month" onchange="renderHodView()">
+            </div>
+
+            <div class="form-group">
+              <label for="hod-plan-week">Filter by Week:</label>
+              <select id="hod-plan-week" onchange="renderHodView()">
+                <option value="All">All Weeks</option>
+                <option value="Week 1">Week 1</option>
+                <option value="Week 2">Week 2</option>
+                <option value="Week 3">Week 3</option>
+                <option value="Week 4">Week 4</option>
+                <option value="Week 5">Week 5</option>
+              </select>
+            </div>
           </div>
 
           <div id="hod-records-container"></div>
@@ -504,10 +594,13 @@
 
         <!-- HOD Live Class Tab -->
         <div id="hod-live-class-tab" class="tab-content">
-          <h3>Department Live Class Monitoring</h3>
+          <div class="action-header" style="margin-top:0;">
+            <h3>Department Live Class & Schedule Monitoring</h3>
+            <button type="button" class="success" onclick="exportScheduleMatrixToCSV()">Export All Schedules (.CSV)</button>
+          </div>
           
-          <div class="form-group">
-            <label for="live-hod-teacher-select">Select Teacher to View Live Class Status:</label>
+          <div class="form-group" style="margin-top: 15px;">
+            <label for="live-hod-teacher-select">Select Teacher to View Live Status & Schedule:</label>
             <select id="live-hod-teacher-select" onchange="renderLiveClassView('hod')">
               <!-- Dynamically populated -->
             </select>
@@ -534,6 +627,8 @@
               <tbody id="live-schedule-table-body-hod"></tbody>
             </table>
           </div>
+
+          <div id="live-summary-hod" class="summary-card"></div>
         </div>
 
         <!-- HOD Tab 2: Teacher Setup -->
@@ -606,45 +701,6 @@
           </div>
         </div>
 
-        <!-- HOD Tab 3: Weekly Schedule Setup Matrix -->
-        <div id="hod-schedule-tab" class="tab-content">
-          <div class="action-header" style="margin-top:0;">
-            <h3>Weekly Schedule Setup Matrix</h3>
-            <button type="button" class="success" onclick="exportScheduleMatrixToCSV()">Export Schedule Matrix (.CSV)</button>
-          </div>
-          
-          <div class="form-group" style="margin-top: 15px;">
-            <label for="matrix-teacher-select">Select Teacher to Edit Weekly Matrix:</label>
-            <select id="matrix-teacher-select" onchange="loadMatrixForSelectedTeacher()">
-              <!-- Dynamically populated -->
-            </select>
-          </div>
-
-          <div class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>P1<br><small>8:10-8:50</small></th>
-                  <th>P2<br><small>8:50-9:30</small></th>
-                  <th>P3<br><small>9:40-10:20</small></th>
-                  <th>P4<br><small>10:20-11:00</small></th>
-                  <th>P5<br><small>11:00-11:40</small></th>
-                  <th>P6<br><small>12:00-12:40</small></th>
-                  <th>P7<br><small>12:40-1:20</small></th>
-                  <th>P8<br><small>1:20-2:00</small></th>
-                  <th>P9<br><small>2:00-2:40</small></th>
-                </tr>
-              </thead>
-              <tbody id="matrix-table-body"></tbody>
-            </table>
-          </div>
-
-          <div style="margin-top: 15px;">
-            <button type="button" class="success" onclick="saveMatrixData()">Save Weekly Schedule Matrix</button>
-          </div>
-        </div>
-
       </div>
 
     </div>
@@ -652,7 +708,7 @@
   </div>
 
   <script>
-    // --- FIREBASE INITIALIZATION ---
+    // Firebase and global state variables
     const firebaseConfig = {
       apiKey: "AIzaSyBguW-1Yztzy7CmKMaQZz57Zmj8ASdQ1Ig",
       authDomain: "math-department-app.firebaseapp.com",
@@ -666,26 +722,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Global memory cache synced with Firebase
     let localTeachers = [];
     let localLessonPlans = [];
     let localMatrixSchedules = {};
     let localTeacherPasswords = {};
     let hodPassword = 'admin123';
 
+    let selectedClassHighlight = null;
+    let currentFetchedPeriods = [];
+
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const periodCount = 9;
 
     const periodTimings = [
-      { p: 1, start: 8 * 60 + 10, end: 8 * 60 + 50 },  // 8:10 - 8:50
-      { p: 2, start: 8 * 60 + 50, end: 9 * 60 + 30 },  // 8:50 - 9:30
-      { p: 3, start: 9 * 60 + 40, end: 10 * 60 + 20 }, // 9:40 - 10:20
-      { p: 4, start: 10 * 60 + 20, end: 11 * 60 + 0 }, // 10:20 - 11:00
-      { p: 5, start: 11 * 60 + 0, end: 11 * 60 + 40 }, // 11:00 - 11:40
-      { p: 6, start: 12 * 60 + 0, end: 12 * 60 + 40 }, // 12:00 - 12:40
-      { p: 7, start: 12 * 60 + 40, end: 13 * 60 + 20 },// 12:40 - 1:20
-      { p: 8, start: 13 * 60 + 20, end: 14 * 60 + 0 }, // 1:20 - 2:00
-      { p: 9, start: 14 * 60 + 0, end: 14 * 60 + 40 }  // 2:00 - 2:40
+      { p: 1, start: 8 * 60 + 10, end: 8 * 60 + 50 },
+      { p: 2, start: 8 * 60 + 50, end: 9 * 60 + 30 },
+      { p: 3, start: 9 * 60 + 40, end: 10 * 60 + 20 },
+      { p: 4, start: 10 * 60 + 20, end: 11 * 60 + 0 },
+      { p: 5, start: 11 * 60 + 0, end: 11 * 60 + 40 },
+      { p: 6, start: 12 * 60 + 0, end: 12 * 60 + 40 },
+      { p: 7, start: 12 * 60 + 40, end: 13 * 60 + 20 },
+      { p: 8, start: 13 * 60 + 20, end: 14 * 60 + 0 },
+      { p: 9, start: 14 * 60 + 0, end: 14 * 60 + 40 }
     ];
 
     let defaultTeachers = [
@@ -698,8 +756,22 @@
     let currentUser = null;
     let currentRole = 'teacher';
 
+    function formatMonthDisplay(monthVal) {
+      if (!monthVal) return 'Unspecified Month';
+      if (monthVal.includes('-')) {
+        const parts = monthVal.split('-');
+        const dateObj = new Date(parts[0], parseInt(parts[1], 10) - 1);
+        return dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+      }
+      return monthVal;
+    }
+
     function initData() {
-      // Listen to Teachers in Cloud
+      const now = new Date();
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const planMonthInput = document.getElementById('plan-month');
+      if (planMonthInput) planMonthInput.value = currentYearMonth;
+
       db.ref('teachers').on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
@@ -711,7 +783,6 @@
         }
       });
 
-      // Listen to Lesson Plans in Cloud
       db.ref('lesson_plans').on('value', (snapshot) => {
         const data = snapshot.val();
         localLessonPlans = data ? Object.values(data) : [];
@@ -721,18 +792,18 @@
         }
       });
 
-      // Listen to Matrix Schedules in Cloud
       db.ref('schedules').on('value', (snapshot) => {
         localMatrixSchedules = snapshot.val() || {};
-        if (currentUser && currentRole === 'teacher') renderTeacherSchedule(currentUser);
+        if (currentUser && currentRole === 'teacher') {
+          renderTeacherScheduleEditor(currentUser);
+          setupLessonPlanClassOptions();
+        }
       });
 
-      // Listen to HOD Password in Cloud
       db.ref('hod_password').on('value', (snapshot) => {
         hodPassword = snapshot.val() || 'admin123';
       });
 
-      // Listen to Teacher Passwords in Cloud
       db.ref('teacher_passwords').on('value', (snapshot) => {
         localTeacherPasswords = snapshot.val() || {};
       });
@@ -742,19 +813,16 @@
       const loginSelect = document.getElementById('login-teacher-name');
       const hodSelect = document.getElementById('hod-teacher-select');
       const liveHodSelect = document.getElementById('live-hod-teacher-select');
-      const matrixSelect = document.getElementById('matrix-teacher-select');
 
       loginSelect.innerHTML = '';
       hodSelect.innerHTML = '';
       liveHodSelect.innerHTML = '';
-      matrixSelect.innerHTML = '';
 
       localTeachers.forEach(t => {
         const displayName = t.fullName || `${t.salutation ? t.salutation + ' ' : ''}${t.name}`;
         loginSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
         hodSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
         liveHodSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
-        matrixSelect.innerHTML += `<option value="${displayName}">${displayName}</option>`;
       });
     }
 
@@ -781,7 +849,6 @@
         const cleanKey = selectedTeacher.replace(/[.#$/[\]]/g, '_');
         const setPassword = localTeacherPasswords[cleanKey];
 
-        // Check if teacher has set a password
         if (setPassword && setPassword !== enteredPassword) {
           alert('Incorrect Password for ' + selectedTeacher + '!');
           return;
@@ -793,8 +860,9 @@
         document.getElementById('teacher-portal').classList.remove('hidden');
         document.getElementById('hod-portal').classList.add('hidden');
         document.getElementById('teacher-password').value = '';
-        renderTeacherSchedule(currentUser);
+        renderTeacherScheduleEditor(currentUser);
         renderTeacherSavedPlans();
+        setupLessonPlanClassOptions();
       } else {
         const inputPassword = document.getElementById('hod-password').value;
 
@@ -811,11 +879,104 @@
         document.getElementById('hod-password').value = '';
         renderHodView();
         renderTeacherTable();
-        loadMatrixForSelectedTeacher();
       }
 
+      selectedClassHighlight = null;
       document.getElementById('login-view').classList.add('hidden');
       document.getElementById('portal-view').classList.remove('hidden');
+    }
+
+    function setupLessonPlanClassOptions() {
+      const classSecSelect = document.getElementById('plan-class-section');
+      if (!classSecSelect || !currentUser) return;
+
+      const cleanKey = currentUser.replace(/[.#$/[\]]/g, '_');
+      const savedMatrix = localMatrixSchedules[cleanKey] || {};
+
+      const uniqueClasses = new Set();
+      daysOfWeek.forEach(day => {
+        for (let p = 1; p <= periodCount; p++) {
+          const cls = savedMatrix[`${day}_p${p}_class`];
+          if (cls && cls !== 'Free') {
+            uniqueClasses.add(cls);
+          }
+        }
+      });
+
+      classSecSelect.innerHTML = '';
+
+      if (uniqueClasses.size > 0) {
+        classSecSelect.innerHTML = `<option value="">-- Select Allocated Class & Section --</option>`;
+        Array.from(uniqueClasses).sort().forEach(cls => {
+          classSecSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+        });
+      } else {
+        classSecSelect.innerHTML = `<option value="">No classes found in schedule setup</option>`;
+      }
+
+      fetchSchedulePeriodsForPlan();
+    }
+
+    function fetchSchedulePeriodsForPlan() {
+      const classSec = document.getElementById('plan-class-section').value;
+      const container = document.getElementById('dynamic-period-rows');
+      const submitBtn = document.getElementById('submit-plan-btn');
+      container.innerHTML = '';
+      currentFetchedPeriods = [];
+
+      if (!classSec) {
+        container.innerHTML = `<p style="color:#777;">Please select a class & section to fetch scheduled periods.</p>`;
+        submitBtn.disabled = true;
+        return;
+      }
+
+      const cleanKey = currentUser.replace(/[.#$/[\]]/g, '_');
+      const savedMatrix = localMatrixSchedules[cleanKey] || {};
+
+      daysOfWeek.forEach(day => {
+        for (let p = 1; p <= periodCount; p++) {
+          const cls = savedMatrix[`${day}_p${p}_class`];
+          if (cls === classSec) {
+            currentFetchedPeriods.push({
+              day: day,
+              periodNumber: p,
+              title: `${day} — Period${p}`
+            });
+          }
+        }
+      });
+
+      if (currentFetchedPeriods.length === 0) {
+        container.innerHTML = `<p style="color:#e74c3c;">No scheduled periods found for <strong>${classSec}</strong> in your schedule. Please setup your timetable first.</p>`;
+        submitBtn.disabled = true;
+        return;
+      }
+
+      const title = document.createElement('h4');
+      title.innerText = `Scheduled Periods for ${classSec} (${currentFetchedPeriods.length} Period Slots Found)`;
+      title.style.marginTop = '20px';
+      container.appendChild(title);
+
+      currentFetchedPeriods.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'period-input-box';
+        div.innerHTML = `
+          <strong style="color:var(--accent-color);">${idx + 1}.${item.title}</strong>
+          <div class="form-grid" style="margin-top: 10px; margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="period-lesson-${idx}">Lesson Name:</label>
+              <input type="text" id="period-lesson-${idx}" class="period-lesson-input" placeholder="e.g., Matrices & Determinants" required>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="period-topics-${idx}">Topics Covered in Row:</label>
+              <textarea id="period-topics-${idx}" class="period-topics-input" rows="2" placeholder="Describe specific topics covered in this period..." required></textarea>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      submitBtn.disabled = false;
     }
 
     function updateTeacherPassword() {
@@ -869,7 +1030,6 @@
       btn.classList.add('active');
     }
 
-    // --- LIVE CLASS HIGHLIGHTING SYSTEM ---
     function getCurrentTimeAndDayInfo() {
       const now = new Date();
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -889,15 +1049,62 @@
       return { currentDay, activePeriod, timeStr };
     }
 
+    function calculateClassSummary(matrix, viewType) {
+      const counts = {};
+      let totalLoad = 0;
+
+      daysOfWeek.forEach(day => {
+        for (let p = 1; p <= periodCount; p++) {
+          const cls = matrix[`${day}_p${p}_class`];
+          if (cls && cls !== 'Free') {
+            counts[cls] = (counts[cls] || 0) + 1;
+            totalLoad++;
+          }
+        }
+      });
+
+      let badgesHtml = '';
+      const sections = Object.keys(counts).sort();
+
+      if (sections.length > 0) {
+        sections.forEach(sec => {
+          const isActive = selectedClassHighlight === sec ? 'active-filter' : '';
+          const safeSecStr = sec.replace(/'/g, "\\'");
+          badgesHtml += `
+            <button type="button" 
+                    class="summary-badge-btn ${isActive}" 
+                    onclick="toggleHighlightClass('${safeSecStr}', '${viewType}')">
+              ${sec}: <span>${counts[sec]}${counts[sec] === 1 ? 'Period' : 'Periods'}</span>
+            </button>
+          `;
+        });
+      } else {
+        badgesHtml = `<span style="color:#777; font-size:13px;">No classes scheduled for this timetable.</span>`;
+      }
+
+      return { badgesHtml, totalLoad };
+    }
+
+    function toggleHighlightClass(className, viewType) {
+      if (selectedClassHighlight === className) {
+        selectedClassHighlight = null;
+      } else {
+        selectedClassHighlight = className;
+      }
+      renderLiveClassView(viewType);
+    }
+
     function renderLiveClassView(viewType) {
       let targetTeacher = currentUser;
       let targetTbodyId = 'live-schedule-table-body-teacher';
       let statusTimeId = 'live-status-time-teacher';
+      let summaryContainerId = 'live-summary-teacher';
 
       if (viewType === 'hod') {
         targetTeacher = document.getElementById('live-hod-teacher-select').value;
         targetTbodyId = 'live-schedule-table-body-hod';
         statusTimeId = 'live-status-time-hod';
+        summaryContainerId = 'live-summary-hod';
       }
 
       const tbody = document.getElementById(targetTbodyId);
@@ -905,7 +1112,7 @@
 
       const { currentDay, activePeriod, timeStr } = getCurrentTimeAndDayInfo();
 
-      let statusMsg = `Current System Time: ${timeStr} | Day: ${currentDay}`;
+      let statusMsg = `Current System Time: ${timeStr} \vert{} Day:${currentDay}`;
       if (activePeriod) {
         statusMsg += ` | Active Period: Period ${activePeriod}`;
       } else {
@@ -926,95 +1133,106 @@
         for (let p = 1; p <= periodCount; p++) {
           const cls = savedMatrix[`${day}_p${p}_class`] || 'Free';
           const isLiveCell = isToday && (p === activePeriod);
+          const isHighlighted = (selectedClassHighlight && cls === selectedClassHighlight);
+
+          let cellClass = '';
+          if (isLiveCell) {
+            cellClass = 'live-class-active';
+          } else if (isHighlighted) {
+            cellClass = 'highlight-selected-class';
+          }
 
           if (isLiveCell) {
             rowHtml += `
-              <td class="live-class-active">
+              <td class="${cellClass}">
                 <span class="live-indicator-badge">● ONGOING CLASS</span>
                 ${cls}
               </td>
             `;
           } else {
-            rowHtml += `<td>${cls}</td>`;
+            rowHtml += `<td class="${cellClass}">${cls}</td>`;
           }
         }
 
         tr.innerHTML = rowHtml;
         tbody.appendChild(tr);
       });
-    }
 
-    function generateDynamicPeriodRows() {
-      const count = parseInt(document.getElementById('plan-periods').value, 10);
-      const container = document.getElementById('dynamic-period-rows');
-      container.innerHTML = '';
+      const summaryContainer = document.getElementById(summaryContainerId);
+      const { badgesHtml, totalLoad } = calculateClassSummary(savedMatrix, viewType);
 
-      if (isNaN(count) || count <= 0) return;
-
-      const title = document.createElement('h4');
-      title.innerText = `Period Details (${count} Period${count > 1 ? 's' : ''})`;
-      title.style.marginTop = '20px';
-      container.appendChild(title);
-
-      for (let i = 1; i <= count; i++) {
-        const div = document.createElement('div');
-        div.className = 'period-input-box';
-        div.innerHTML = `
-          <strong>Period ${i} Details:</strong>
-          <div class="form-grid" style="margin-top: 8px; margin-bottom: 0;">
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="period-lesson-${i}">Lesson Name:</label>
-              <input type="text" id="period-lesson-${i}" class="period-lesson-input" placeholder="e.g., Quadratic Equations - Part ${i}" required>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="period-topics-${i}">Topics to be Taught:</label>
-              <textarea id="period-topics-${i}" class="period-topics-input" rows="2" placeholder="List topics covered in period ${i}..." required></textarea>
-            </div>
-          </div>
-        `;
-        container.appendChild(div);
-      }
+      summaryContainer.innerHTML = `
+        <div class="summary-header">
+          <h4 style="margin:0; font-size:15px; color:var(--primary-color);">Weekly Workload Overview (${targetTeacher})</h4>
+          <div class="total-load-badge">Total Class Load: ${totalLoad} Periods/Week</div>
+        </div>
+        <div class="summary-grid">
+          ${badgesHtml}
+        </div>
+      `;
     }
 
     function handlePlanSubmit(event) {
       event.preventDefault();
 
-      const periodCount = parseInt(document.getElementById('plan-periods').value, 10);
-      if (!periodCount) {
-        alert('Please select the number of periods.');
+      if (currentFetchedPeriods.length === 0) {
+        alert('No period details available to submit.');
         return;
       }
 
+      const rawMonthVal = document.getElementById('plan-month').value;
+      if (!rawMonthVal) {
+        alert('Please select a month using the calendar picker.');
+        return;
+      }
+
+      const classSecVal = document.getElementById('plan-class-section').value;
+
       const periodDetails = [];
-      for (let i = 1; i <= periodCount; i++) {
+      for (let i = 0; i < currentFetchedPeriods.length; i++) {
         const lesson = document.getElementById(`period-lesson-${i}`).value.trim();
         const topics = document.getElementById(`period-topics-${i}`).value.trim();
 
         if (!lesson || !topics) {
-          alert(`Please complete the lesson and topics details for Period ${i}.`);
+          alert(`Please complete the Lesson Name and Topics Covered for Row ${i + 1} (${currentFetchedPeriods[i].title}).`);
           return;
         }
 
-        periodDetails.push({ periodNumber: i, lesson, topics });
+        periodDetails.push({
+          periodSlot: currentFetchedPeriods[i].title,
+          day: currentFetchedPeriods[i].day,
+          periodNumber: currentFetchedPeriods[i].periodNumber,
+          lesson: lesson,
+          topics: topics,
+          useOfDigitalBoard: "",
+          classControl: "",
+          methodology: "",
+          verified: false
+        });
       }
 
       const planId = Date.now();
       const plan = {
         id: planId,
         teacher: currentUser,
+        month: rawMonthVal,
         week: document.getElementById('plan-week').value,
-        class: document.getElementById('plan-class').value,
-        section: document.getElementById('plan-section').value,
-        periodsCount: periodCount,
+        classSection: classSecVal,
+        periodsCount: currentFetchedPeriods.length,
         periodDetails: periodDetails,
         verified: false
       };
 
       db.ref(`lesson_plans/${planId}`).set(plan, (error) => {
         if (!error) {
-          alert('Lesson plan uploaded to cloud successfully!');
+          alert('Weekly lesson plan submitted successfully!');
           document.getElementById('lesson-plan-form').reset();
           document.getElementById('dynamic-period-rows').innerHTML = '';
+          
+          const now = new Date();
+          document.getElementById('plan-month').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          
+          setupLessonPlanClassOptions();
         } else {
           alert('Error saving plan to cloud: ' + error.message);
         }
@@ -1022,18 +1240,23 @@
     }
 
     function renderTeacherSavedPlans() {
+      const selectedMonth = document.getElementById('view-plan-month').value;
       const selectedWeek = document.getElementById('view-plan-week').value;
       const container = document.getElementById('teacher-saved-plans-container');
       container.innerHTML = '';
 
       let plans = localLessonPlans.filter(p => p.teacher === currentUser);
 
+      if (selectedMonth) {
+        plans = plans.filter(p => p.month === selectedMonth);
+      }
+
       if (selectedWeek !== 'All') {
         plans = plans.filter(p => p.week === selectedWeek);
       }
 
       if (plans.length === 0) {
-        container.innerHTML = `<p style="color:#777; margin-top:15px;">No saved lesson plans found for ${selectedWeek === 'All' ? 'any week' : selectedWeek}.</p>`;
+        container.innerHTML = `<p style="color:#777; margin-top:15px;">No saved lesson plans found for the selected criteria.</p>`;
         return;
       }
 
@@ -1046,9 +1269,12 @@
           plan.periodDetails.forEach(pd => {
             detailsTableRows += `
               <tr>
-                <td><strong>Period ${pd.periodNumber}</strong></td>
+                <td><strong>${pd.periodSlot || 'Period ' + pd.periodNumber}</strong></td>
                 <td>${pd.lesson}</td>
                 <td>${pd.topics}</td>
+                <td>${pd.useOfDigitalBoard || '-'}</td>
+                <td>${pd.classControl || '-'}</td>
+                <td>${pd.methodology || '-'}</td>
               </tr>
             `;
           });
@@ -1056,21 +1282,29 @@
 
         const badgeHtml = plan.verified 
           ? `<span class="badge badge-success">✓ Verified by HOD</span>`
-          : `<span class="badge badge-warning">⏳ Pending HOD Verification</span>`;
+          : ``;
+
+        const displayMonth = formatMonthDisplay(plan.month);
 
         card.innerHTML = `
           <div class="verification-row">
-            <strong>${plan.week} — ${plan.class} (${plan.section})</strong>
-            <div>${badgeHtml}</div>
+            <strong>${displayMonth} — ${plan.week} —${plan.classSection || plan.class}</strong>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${badgeHtml}
+              <button class="danger action-btn" onclick="deleteLessonPlan(${plan.id})">Delete Lesson Plan</button>
+            </div>
           </div>
-          <p style="margin: 5px 0 10px 0; font-size:13px; color:#555;"><strong>Total Periods:</strong> ${plan.periodsCount || plan.periods}</p>
+          <p style="margin: 5px 0 10px 0; font-size:13px; color:#555;"><strong>Total Scheduled Periods Covered:</strong> ${plan.periodsCount || plan.periods}</p>
           <div class="table-responsive">
             <table>
               <thead>
                 <tr>
-                  <th style="width:15%;">Period</th>
-                  <th style="width:35%;">Lesson Name</th>
-                  <th style="width:50%;">Topics to be Taught</th>
+                  <th style="width:15%;">Period Slot</th>
+                  <th style="width:20%;">Lesson Name</th>
+                  <th style="width:25%;">Topics Covered</th>
+                  <th style="width:13%;">Digital Board</th>
+                  <th style="width:13%;">Class Control</th>
+                  <th style="width:14%;">Methodology</th>
                 </tr>
               </thead>
               <tbody>${detailsTableRows}</tbody>
@@ -1081,15 +1315,38 @@
       });
     }
 
+    function deleteLessonPlan(planId) {
+      if (confirm('Are you sure you want to delete this lesson plan? This action cannot be undone.')) {
+        db.ref(`lesson_plans/${planId}`).remove((error) => {
+          if (!error) {
+            alert('Lesson plan deleted successfully.');
+          } else {
+            alert('Error deleting lesson plan: ' + error.message);
+          }
+        });
+      }
+    }
+
+    /* RENDER HOD PLAN VERIFICATION DASHBOARD WITH DIGITAL BOARD, CLASS CONTROL & METHODOLOGY COLUMNS */
     function renderHodView() {
       const selectedTeacher = document.getElementById('hod-teacher-select').value;
+      const selectedMonth = document.getElementById('hod-plan-month').value;
+      const selectedWeek = document.getElementById('hod-plan-week').value;
       const container = document.getElementById('hod-records-container');
       container.innerHTML = '';
 
-      const plans = localLessonPlans.filter(p => p.teacher === selectedTeacher);
+      let plans = localLessonPlans.filter(p => p.teacher === selectedTeacher);
+
+      if (selectedMonth) {
+        plans = plans.filter(p => p.month === selectedMonth);
+      }
+
+      if (selectedWeek !== 'All') {
+        plans = plans.filter(p => p.week === selectedWeek);
+      }
 
       if (plans.length === 0) {
-        container.innerHTML = `<p style="color:#777; margin-top:15px;">No lesson plans uploaded yet for ${selectedTeacher}.</p>`;
+        container.innerHTML = `<p style="color:#777; margin-top:15px;">No lesson plans found for ${selectedTeacher} matching the selected filters.</p>`;
         return;
       }
 
@@ -1099,33 +1356,62 @@
 
         let detailsTableRows = '';
         if (plan.periodDetails && plan.periodDetails.length > 0) {
-          plan.periodDetails.forEach(pd => {
+          plan.periodDetails.forEach((pd, idx) => {
+            const isPdVerified = pd.verified ? true : false;
+            const digitalBoardVal = pd.useOfDigitalBoard || '';
+            const classControlVal = pd.classControl || '';
+            const methodologyVal = pd.methodology || '';
+
             detailsTableRows += `
               <tr>
-                <td><strong>Period ${pd.periodNumber}</strong></td>
+                <td><strong>${pd.periodSlot || 'Period ' + pd.periodNumber}</strong></td>
                 <td>${pd.lesson}</td>
                 <td>${pd.topics}</td>
+                <td>
+                  <textarea id="digi-${plan.id}-${idx}" class="hod-input-cell" placeholder="Notes on Digital Board use..." onchange="updatePeriodFeedback(${plan.id}, ${idx})">${digitalBoardVal}</textarea>
+                </td>
+                <td>
+                  <textarea id="control-${plan.id}-${idx}" class="hod-input-cell" placeholder="Notes on Class Control..." onchange="updatePeriodFeedback(${plan.id}, ${idx})">${classControlVal}</textarea>
+                </td>
+                <td>
+                  <textarea id="method-${plan.id}-${idx}" class="hod-input-cell" placeholder="Notes on Methodology..." onchange="updatePeriodFeedback(${plan.id}, ${idx})">${methodologyVal}</textarea>
+                </td>
+                <td style="text-align: center; width: 100px;">
+                  <div class="checkbox-container">
+                    <input type="checkbox" id="verify-p-${plan.id}-${idx}" ${isPdVerified ? 'checked' : ''} onchange="togglePeriodVerification(${plan.id},${idx}, this.checked)">
+                    <label for="verify-p-${plan.id}-${idx}" style="font-weight:normal; margin:0; font-size:12px;">Verified</label>
+                  </div>
+                </td>
               </tr>
             `;
           });
         }
 
+        const badgeHtml = plan.verified 
+          ? `<span class="badge badge-success">✓ Verified by HOD</span>`
+          : ``;
+
+        const displayMonth = formatMonthDisplay(plan.month);
+
         card.innerHTML = `
           <div class="verification-row">
-            <strong>${plan.week} — ${plan.class} (${plan.section})</strong>
-            <div class="checkbox-container">
-              <input type="checkbox" id="verify-${plan.id}" ${plan.verified ? 'checked' : ''} onchange="toggleVerification(${plan.id}, this.checked)">
-              <label for="verify-${plan.id}">Verified by HOD</label>
+            <strong>${displayMonth} — ${plan.week} — ${plan.classSection || plan.class}</strong>
+            <div>
+              ${badgeHtml}
             </div>
           </div>
-          <p style="margin: 5px 0 10px 0; font-size:13px; color:#555;"><strong>Total Periods:</strong> ${plan.periodsCount || plan.periods}</p>
+          <p style="margin: 5px 0 10px 0; font-size:13px; color:#555;"><strong>Total Scheduled Periods Covered:</strong> ${plan.periodsCount || plan.periods}</p>
           <div class="table-responsive">
             <table>
               <thead>
                 <tr>
-                  <th style="width:15%;">Period</th>
-                  <th style="width:35%;">Lesson Name</th>
-                  <th style="width:50%;">Topics to be Taught</th>
+                  <th style="width:12%;">Period Slot</th>
+                  <th style="width:16%;">Lesson Name</th>
+                  <th style="width:20%;">Topics Covered</th>
+                  <th style="width:14%;">Use of Digital Board</th>
+                  <th style="width:14%;">Class Control</th>
+                  <th style="width:14%;">Methodology</th>
+                  <th style="width:10%; text-align:center;">Period Verification</th>
                 </tr>
               </thead>
               <tbody>${detailsTableRows}</tbody>
@@ -1136,8 +1422,107 @@
       });
     }
 
-    function toggleVerification(planId, isChecked) {
-      db.ref(`lesson_plans/${planId}/verified`).set(isChecked);
+    function updatePeriodFeedback(planId, periodIndex) {
+      const plan = localLessonPlans.find(p => p.id === planId);
+      if (!plan || !plan.periodDetails) return;
+
+      const updatedPeriodDetails = [...plan.periodDetails];
+      const digiElem = document.getElementById(`digi-${planId}-${periodIndex}`);
+      const controlElem = document.getElementById(`control-${planId}-${periodIndex}`);
+      const methodElem = document.getElementById(`method-${planId}-${periodIndex}`);
+
+      updatedPeriodDetails[periodIndex].useOfDigitalBoard = digiElem ? digiElem.value : '';
+      updatedPeriodDetails[periodIndex].classControl = controlElem ? controlElem.value : '';
+      updatedPeriodDetails[periodIndex].methodology = methodElem ? methodElem.value : '';
+
+      db.ref(`lesson_plans/${planId}`).update({
+        periodDetails: updatedPeriodDetails
+      });
+    }
+
+    function togglePeriodVerification(planId, periodIndex, isChecked) {
+      const plan = localLessonPlans.find(p => p.id === planId);
+      if (!plan || !plan.periodDetails) return;
+
+      const updatedPeriodDetails = [...plan.periodDetails];
+      
+      const digiElem = document.getElementById(`digi-${planId}-${periodIndex}`);
+      const controlElem = document.getElementById(`control-${planId}-${periodIndex}`);
+      const methodElem = document.getElementById(`method-${planId}-${periodIndex}`);
+
+      if (digiElem) updatedPeriodDetails[periodIndex].useOfDigitalBoard = digiElem.value;
+      if (controlElem) updatedPeriodDetails[periodIndex].classControl = controlElem.value;
+      if (methodElem) updatedPeriodDetails[periodIndex].methodology = methodElem.value;
+
+      updatedPeriodDetails[periodIndex].verified = isChecked;
+
+      const allVerified = updatedPeriodDetails.every(pd => pd.verified === true);
+
+      db.ref(`lesson_plans/${planId}`).update({
+        periodDetails: updatedPeriodDetails,
+        verified: allVerified
+      });
+    }
+
+    function exportLessonPlansCSV(role) {
+      let selectedTeacher, selectedMonth, selectedWeek;
+
+      if (role === 'teacher') {
+        selectedTeacher = currentUser;
+        selectedMonth = document.getElementById('view-plan-month').value;
+        selectedWeek = document.getElementById('view-plan-week').value;
+      } else {
+        selectedTeacher = document.getElementById('hod-teacher-select').value;
+        selectedMonth = document.getElementById('hod-plan-month').value;
+        selectedWeek = document.getElementById('hod-plan-week').value;
+      }
+
+      let filteredPlans = localLessonPlans.filter(p => p.teacher === selectedTeacher);
+
+      if (selectedMonth) {
+        filteredPlans = filteredPlans.filter(p => p.month === selectedMonth);
+      }
+
+      if (selectedWeek !== 'All') {
+        filteredPlans = filteredPlans.filter(p => p.week === selectedWeek);
+      }
+
+      if (filteredPlans.length === 0) {
+        alert('No lesson plans found to download for the selected filters.');
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,Teacher Name,Month,Week,Class Section,Period Slot,Lesson Name,Topics Covered,Use of Digital Board,Class Control,Methodology,Period Status,Week Overall Status\n";
+
+      filteredPlans.forEach(plan => {
+        const teacherName = `"${plan.teacher}"`;
+        const month = `"${formatMonthDisplay(plan.month)}"`;
+        const week = `"${plan.week}"`;
+        const classSec = `"${plan.classSection || plan.class}"`;
+        const overallStatus = plan.verified ? '"Verified"' : '"Pending"';
+
+        if (plan.periodDetails && plan.periodDetails.length > 0) {
+          plan.periodDetails.forEach(pd => {
+            const slot = `"${pd.periodSlot || 'Period ' + pd.periodNumber}"`;
+            const lesson = `"${(pd.lesson || '').replace(/"/g, '""')}"`;
+            const topics = `"${(pd.topics || '').replace(/"/g, '""')}"`;
+            const digi = `"${(pd.useOfDigitalBoard || '').replace(/"/g, '""')}"`;
+            const control = `"${(pd.classControl || '').replace(/"/g, '""')}"`;
+            const method = `"${(pd.methodology || '').replace(/"/g, '""')}"`;
+            const periodStatus = pd.verified ? '"Verified"' : '"Pending"';
+            csvContent += `${teacherName},${month},${week},${classSec},${slot},${lesson},${topics},${digi},${control},${method},${periodStatus},${overallStatus}\n`;
+          });
+        }
+      });
+
+      const fileName = `Lesson_Plans_${selectedTeacher.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedMonth || 'AllMonths'}_${selectedWeek}.csv`;
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     function generateClassOptions(classesString) {
@@ -1290,18 +1675,15 @@
       document.body.removeChild(link);
     }
 
-    function loadMatrixForSelectedTeacher() {
-      const teacherName = document.getElementById('matrix-teacher-select').value;
+    function renderTeacherScheduleEditor(teacherName) {
       if (!teacherName) return;
 
       const teacher = localTeachers.find(t => t.fullName === teacherName || t.name === teacherName);
-      if (!teacher) return;
-
-      const classOptionsHtml = generateClassOptions(teacher.classes);
+      const classOptionsHtml = generateClassOptions(teacher ? teacher.classes : "1,2,3,4,5,6,7,8,9,10,11,12");
       const cleanKey = teacherName.replace(/[.#$/[\]]/g, '_');
       const savedMatrix = localMatrixSchedules[cleanKey] || {};
 
-      const tbody = document.getElementById('matrix-table-body');
+      const tbody = document.getElementById('schedule-table-body');
       tbody.innerHTML = '';
 
       daysOfWeek.forEach(day => {
@@ -1330,9 +1712,8 @@
       });
     }
 
-    function saveMatrixData() {
-      const teacherName = document.getElementById('matrix-teacher-select').value;
-      if (!teacherName) return;
+    function saveTeacherSchedule() {
+      if (!currentUser) return;
 
       const matrixData = {};
       daysOfWeek.forEach(day => {
@@ -1341,36 +1722,17 @@
         }
       });
 
-      const cleanKey = teacherName.replace(/[.#$/[\]]/g, '_');
+      const cleanKey = currentUser.replace(/[.#$/[\]]/g, '_');
       db.ref(`schedules/${cleanKey}`).set(matrixData, (error) => {
         if (!error) {
-          alert(`Weekly schedule matrix saved for ${teacherName}!`);
+          alert(`Weekly schedule saved successfully!`);
+          setupLessonPlanClassOptions();
+        } else {
+          alert(`Error saving schedule: ` + error.message);
         }
       });
     }
 
-    function renderTeacherSchedule(teacherName) {
-      const tbody = document.getElementById('schedule-table-body');
-      tbody.innerHTML = '';
-
-      const cleanKey = teacherName.replace(/[.#$/[\]]/g, '_');
-      const savedMatrix = localMatrixSchedules[cleanKey] || {};
-
-      daysOfWeek.forEach(day => {
-        const tr = document.createElement('tr');
-        let rowHtml = `<td><strong>${day}</strong></td>`;
-
-        for (let p = 1; p <= periodCount; p++) {
-          const cls = savedMatrix[`${day}_p${p}_class`] || 'Free';
-          rowHtml += `<td>${cls}</td>`;
-        }
-
-        tr.innerHTML = rowHtml;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Refresh live class view dynamically every minute
     setInterval(() => {
       if (!document.getElementById('portal-view').classList.contains('hidden')) {
         if (currentRole === 'hod') {
