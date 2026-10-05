@@ -1239,6 +1239,7 @@
       });
     }
 
+    /* RENDER TEACHER SAVED PLANS VIEW (Only Period Slot, Lesson Name & Topics Covered) */
     function renderTeacherSavedPlans() {
       const selectedMonth = document.getElementById('view-plan-month').value;
       const selectedWeek = document.getElementById('view-plan-week').value;
@@ -1272,39 +1273,26 @@
                 <td><strong>${pd.periodSlot || 'Period ' + pd.periodNumber}</strong></td>
                 <td>${pd.lesson}</td>
                 <td>${pd.topics}</td>
-                <td>${pd.useOfDigitalBoard || '-'}</td>
-                <td>${pd.classControl || '-'}</td>
-                <td>${pd.methodology || '-'}</td>
               </tr>
             `;
           });
         }
-
-        const badgeHtml = plan.verified 
-          ? `<span class="badge badge-success">✓ Verified by HOD</span>`
-          : ``;
 
         const displayMonth = formatMonthDisplay(plan.month);
 
         card.innerHTML = `
           <div class="verification-row">
             <strong>${displayMonth} — ${plan.week} —${plan.classSection || plan.class}</strong>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              ${badgeHtml}
-              <button class="danger action-btn" onclick="deleteLessonPlan(${plan.id})">Delete Lesson Plan</button>
-            </div>
+            <button class="danger action-btn" onclick="deleteLessonPlan(${plan.id})">Delete Lesson Plan</button>
           </div>
           <p style="margin: 5px 0 10px 0; font-size:13px; color:#555;"><strong>Total Scheduled Periods Covered:</strong> ${plan.periodsCount || plan.periods}</p>
           <div class="table-responsive">
             <table>
               <thead>
                 <tr>
-                  <th style="width:15%;">Period Slot</th>
-                  <th style="width:20%;">Lesson Name</th>
-                  <th style="width:25%;">Topics Covered</th>
-                  <th style="width:13%;">Digital Board</th>
-                  <th style="width:13%;">Class Control</th>
-                  <th style="width:14%;">Methodology</th>
+                  <th style="width:30%;">Period Slot</th>
+                  <th style="width:35%;">Lesson Name</th>
+                  <th style="width:35%;">Topics Covered</th>
                 </tr>
               </thead>
               <tbody>${detailsTableRows}</tbody>
@@ -1327,7 +1315,7 @@
       }
     }
 
-    /* RENDER HOD PLAN VERIFICATION DASHBOARD WITH DIGITAL BOARD, CLASS CONTROL & METHODOLOGY COLUMNS */
+    /* RENDER HOD PLAN VERIFICATION DASHBOARD */
     function renderHodView() {
       const selectedTeacher = document.getElementById('hod-teacher-select').value;
       const selectedMonth = document.getElementById('hod-plan-month').value;
@@ -1492,7 +1480,12 @@
         return;
       }
 
-      let csvContent = "data:text/csv;charset=utf-8,Teacher Name,Month,Week,Class Section,Period Slot,Lesson Name,Topics Covered,Use of Digital Board,Class Control,Methodology,Period Status,Week Overall Status\n";
+      let csvContent = "";
+      if (role === 'teacher') {
+        csvContent = "data:text/csv;charset=utf-8,Teacher Name,Month,Week,Class Section,Period Slot,Lesson Name,Topics Covered\n";
+      } else {
+        csvContent = "data:text/csv;charset=utf-8,Teacher Name,Month,Week,Class Section,Period Slot,Lesson Name,Topics Covered,Use of Digital Board,Class Control,Methodology,Period Status,Week Overall Status\n";
+      }
 
       filteredPlans.forEach(plan => {
         const teacherName = `"${plan.teacher}"`;
@@ -1506,11 +1499,16 @@
             const slot = `"${pd.periodSlot || 'Period ' + pd.periodNumber}"`;
             const lesson = `"${(pd.lesson || '').replace(/"/g, '""')}"`;
             const topics = `"${(pd.topics || '').replace(/"/g, '""')}"`;
-            const digi = `"${(pd.useOfDigitalBoard || '').replace(/"/g, '""')}"`;
-            const control = `"${(pd.classControl || '').replace(/"/g, '""')}"`;
-            const method = `"${(pd.methodology || '').replace(/"/g, '""')}"`;
             const periodStatus = pd.verified ? '"Verified"' : '"Pending"';
-            csvContent += `${teacherName},${month},${week},${classSec},${slot},${lesson},${topics},${digi},${control},${method},${periodStatus},${overallStatus}\n`;
+
+            if (role === 'teacher') {
+              csvContent += `${teacherName},${month},${week},${classSec},${slot},${lesson},${topics}\n`;
+            } else {
+              const digi = `"${(pd.useOfDigitalBoard || '').replace(/"/g, '""')}"`;
+              const control = `"${(pd.classControl || '').replace(/"/g, '""')}"`;
+              const method = `"${(pd.methodology || '').replace(/"/g, '""')}"`;
+              csvContent += `${teacherName},${month},${week},${classSec},${slot},${lesson},${topics},${digi},${control},${method},${periodStatus},${overallStatus}\n`;
+            }
           });
         }
       });
