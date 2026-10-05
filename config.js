@@ -1,4 +1,4 @@
 // config.js
 const CONFIG = {
-  API_KEY: "YOUR_RESTRICTED_API_KEY_HERE"
+  API_KEY: "AIzaSyBguW-1Yztzy7CmKMaQZz57Zmj8ASdQ1Ig"
 };
