@@ -552,7 +552,7 @@
       <div id="hod-portal" class="hidden">
         <div class="nav-tabs">
           <button class="tab-btn active" onclick="switchHodTab('hod-verify-tab', this)">Plan Verification</button>
-          <button class="tab-btn" onclick="switchHodTab('hod-live-class-tab', this); renderLiveClassView('hod');">Live Class View</button>
+          <button class="tab-btn" onclick="switchHodTab('hod-live-class-tab', this); initHodLiveClassViewMode();">Live Class View</button>
           <button class="tab-btn" onclick="switchHodTab('hod-setup-tab', this)">Teacher Setup</button>
         </div>
 
@@ -592,43 +592,94 @@
           <div id="hod-records-container"></div>
         </div>
 
-        <!-- HOD Live Class Tab -->
+        <!-- HOD Live Class Tab (Updated with Weekly/Daily dropdown view) -->
         <div id="hod-live-class-tab" class="tab-content">
           <div class="action-header" style="margin-top:0;">
             <h3>Department Live Class & Schedule Monitoring</h3>
             <button type="button" class="success" onclick="exportScheduleMatrixToCSV()">Export All Schedules (.CSV)</button>
           </div>
           
-          <div class="form-group" style="margin-top: 15px;">
-            <label for="live-hod-teacher-select">Select Teacher to View Live Status & Schedule:</label>
-            <select id="live-hod-teacher-select" onchange="renderLiveClassView('hod')">
-              <!-- Dynamically populated -->
-            </select>
+          <div class="form-grid" style="margin-top: 15px;">
+            <div class="form-group">
+              <label for="hod-live-view-mode">Select View Mode:</label>
+              <select id="hod-live-view-mode" onchange="handleHodLiveViewModeChange()">
+                <option value="weekly">Weekly View</option>
+                <option value="daily">Daily View</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="hod-daily-day-group" class="hidden">
+              <label for="daily-live-day-select">Select Day (for Daily View):</label>
+              <select id="daily-live-day-select" onchange="renderDailyLiveClassView()">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+              </select>
+            </div>
           </div>
 
-          <p id="live-status-time-hod" style="font-weight:600; color: var(--accent-color);"></p>
+          <!-- Weekly View Container -->
+          <div id="hod-weekly-view-container">
+            <div class="form-group" style="margin-top: 5px;">
+              <label for="live-hod-teacher-select">Select Teacher to View Live Status & Schedule:</label>
+              <select id="live-hod-teacher-select" onchange="renderLiveClassView('hod')">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
 
-          <div class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Day / Period</th>
-                  <th>Period 1<br><small>8:10-8:50</small></th>
-                  <th>Period 2<br><small>8:50-9:30</small></th>
-                  <th>Period 3<br><small>9:40-10:20</small></th>
-                  <th>Period 4<br><small>10:20-11:00</small></th>
-                  <th>Period 5<br><small>11:00-11:40</small></th>
-                  <th>Period 6<br><small>12:00-12:40</small></th>
-                  <th>Period 7<br><small>12:40-1:20</small></th>
-                  <th>Period 8<br><small>1:20-2:00</small></th>
-                  <th>Period 9<br><small>2:00-2:40</small></th>
-                </tr>
-              </thead>
-              <tbody id="live-schedule-table-body-hod"></tbody>
-            </table>
+            <p id="live-status-time-hod" style="font-weight:600; color: var(--accent-color);"></p>
+
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Day / Period</th>
+                    <th>Period 1<br><small>8:10-8:50</small></th>
+                    <th>Period 2<br><small>8:50-9:30</small></th>
+                    <th>Period 3<br><small>9:40-10:20</small></th>
+                    <th>Period 4<br><small>10:20-11:00</small></th>
+                    <th>Period 5<br><small>11:00-11:40</small></th>
+                    <th>Period 6<br><small>12:00-12:40</small></th>
+                    <th>Period 7<br><small>12:40-1:20</small></th>
+                    <th>Period 8<br><small>1:20-2:00</small></th>
+                    <th>Period 9<br><small>2:00-2:40</small></th>
+                  </tr>
+                </thead>
+                <tbody id="live-schedule-table-body-hod"></tbody>
+              </table>
+            </div>
+
+            <div id="live-summary-hod" class="summary-card"></div>
           </div>
 
-          <div id="live-summary-hod" class="summary-card"></div>
+          <!-- Daily View Container -->
+          <div id="hod-daily-view-container" class="hidden" style="margin-top: 15px;">
+            <p id="live-status-time-daily-hod" style="font-weight:600; color: var(--accent-color);"></p>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Teacher Name</th>
+                    <th>Period 1<br><small>8:10-8:50</small></th>
+                    <th>Period 2<br><small>8:50-9:30</small></th>
+                    <th>Period 3<br><small>9:40-10:20</small></th>
+                    <th>Period 4<br><small>10:20-11:00</small></th>
+                    <th>Period 5<br><small>11:00-11:40</small></th>
+                    <th>Period 6<br><small>12:00-12:40</small></th>
+                    <th>Period 7<br><small>12:40-1:20</small></th>
+                    <th>Period 8<br><small>1:20-2:00</small></th>
+                    <th>Period 9<br><small>2:00-2:40</small></th>
+                  </tr>
+                </thead>
+                <tbody id="daily-live-schedule-table-body">
+                  <!-- Dynamically populated matrix -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
 
         <!-- HOD Tab 2: Teacher Setup -->
@@ -780,6 +831,7 @@
           localTeachers = Array.isArray(data) ? data : Object.values(data);
           populateTeacherDropdowns();
           renderTeacherTable();
+          if (currentRole === 'hod') renderDailyLiveClassView();
         }
       });
 
@@ -797,6 +849,9 @@
         if (currentUser && currentRole === 'teacher') {
           renderTeacherScheduleEditor(currentUser);
           setupLessonPlanClassOptions();
+        }
+        if (currentRole === 'hod') {
+          renderDailyLiveClassView();
         }
       });
 
@@ -879,11 +934,37 @@
         document.getElementById('hod-password').value = '';
         renderHodView();
         renderTeacherTable();
+        initHodLiveClassViewMode();
       }
 
       selectedClassHighlight = null;
       document.getElementById('login-view').classList.add('hidden');
       document.getElementById('portal-view').classList.remove('hidden');
+    }
+
+    function initHodLiveClassViewMode() {
+      const modeSelect = document.getElementById('hod-live-view-mode');
+      if (modeSelect) modeSelect.value = 'weekly';
+      handleHodLiveViewModeChange();
+    }
+
+    function handleHodLiveViewModeChange() {
+      const mode = document.getElementById('hod-live-view-mode').value;
+      const weeklyContainer = document.getElementById('hod-weekly-view-container');
+      const dailyContainer = document.getElementById('hod-daily-view-container');
+      const dailyGroup = document.getElementById('hod-daily-day-group');
+
+      if (mode === 'daily') {
+        weeklyContainer.classList.add('hidden');
+        dailyContainer.classList.remove('hidden');
+        dailyGroup.classList.remove('hidden');
+        renderDailyLiveClassView();
+      } else {
+        dailyContainer.classList.add('hidden');
+        dailyGroup.classList.add('hidden');
+        weeklyContainer.classList.remove('hidden');
+        renderLiveClassView('hod');
+      }
     }
 
     function setupLessonPlanClassOptions() {
@@ -1028,6 +1109,70 @@
       
       document.getElementById(tabId).classList.add('active');
       btn.classList.add('active');
+
+      if (tabId === 'hod-live-class-tab') {
+        initHodLiveClassViewMode();
+      }
+    }
+
+    /* RENDER DAILY LIVE CLASS VIEW MATRIX FOR HOD */
+    function renderDailyLiveClassView() {
+      const daySelect = document.getElementById('daily-live-day-select');
+      if (!daySelect) return;
+      const selectedDay = daySelect.value;
+      const tbody = document.getElementById('daily-live-schedule-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const { currentDay, activePeriod, timeStr } = getCurrentTimeAndDayInfo();
+      let statusMsg = `Current System Time: ${timeStr} | Selected Day:${selectedDay}`;
+      if (selectedDay === currentDay && activePeriod) {
+        statusMsg += ` | Active Period: Period ${activePeriod}`;
+      } else {
+        statusMsg += ` | Status: Showing schedule for ${selectedDay}`;
+      }
+      const statusTimeEl = document.getElementById('live-status-time-daily-hod');
+      if (statusTimeEl) statusTimeEl.innerText = statusMsg;
+
+      if (localTeachers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#777;">No teachers registered yet.</td></tr>`;
+        return;
+      }
+
+      localTeachers.forEach(t => {
+        const teacherName = t.fullName || `${t.salutation ? t.salutation + ' ' : ''}${t.name}`;
+        const cleanKey = teacherName.replace(/[.#$/[\]]/g, '_');
+        const savedMatrix = localMatrixSchedules[cleanKey] || {};
+
+        const tr = document.createElement('tr');
+        let rowHtml = `<td><strong>${teacherName}</strong></td>`;
+
+        for (let p = 1; p <= periodCount; p++) {
+          const cls = savedMatrix[`${selectedDay}_p${p}_class`] || 'Free';
+          const isLiveCell = (selectedDay === currentDay) && (p === activePeriod);
+
+          if (isLiveCell && cls !== 'Free') {
+            rowHtml += `
+              <td class="live-class-active">
+                <span class="live-indicator-badge">● ONGOING CLASS</span>
+                ${cls}
+              </td>
+            `;
+          } else if (isLiveCell) {
+            rowHtml += `
+              <td class="live-class-active">
+                <span class="live-indicator-badge">● ONGOING</span>
+                Free
+              </td>
+            `;
+          } else {
+            rowHtml += `<td>${cls}</td>`;
+          }
+        }
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+      });
     }
 
     function getCurrentTimeAndDayInfo() {
@@ -1108,17 +1253,19 @@
       }
 
       const tbody = document.getElementById(targetTbodyId);
+      if (!tbody) return;
       tbody.innerHTML = '';
 
       const { currentDay, activePeriod, timeStr } = getCurrentTimeAndDayInfo();
 
-      let statusMsg = `Current System Time: ${timeStr} \vert{} Day:${currentDay}`;
+      let statusMsg = `Current System Time: ${timeStr} | Day:${currentDay}`;
       if (activePeriod) {
         statusMsg += ` | Active Period: Period ${activePeriod}`;
       } else {
         statusMsg += ` | Status: Outside Regular Class Hours / Break`;
       }
-      document.getElementById(statusTimeId).innerText = statusMsg;
+      const statusTimeEl = document.getElementById(statusTimeId);
+      if (statusTimeEl) statusTimeEl.innerText = statusMsg;
 
       const cleanKey = (targetTeacher || '').replace(/[.#$/[\]]/g, '_');
       const savedMatrix = localMatrixSchedules[cleanKey] || {};
@@ -1159,17 +1306,18 @@
       });
 
       const summaryContainer = document.getElementById(summaryContainerId);
-      const { badgesHtml, totalLoad } = calculateClassSummary(savedMatrix, viewType);
-
-      summaryContainer.innerHTML = `
-        <div class="summary-header">
-          <h4 style="margin:0; font-size:15px; color:var(--primary-color);">Weekly Workload Overview (${targetTeacher})</h4>
-          <div class="total-load-badge">Total Class Load: ${totalLoad} Periods/Week</div>
-        </div>
-        <div class="summary-grid">
-          ${badgesHtml}
-        </div>
-      `;
+      if (summaryContainer) {
+        const { badgesHtml, totalLoad } = calculateClassSummary(savedMatrix, viewType);
+        summaryContainer.innerHTML = `
+          <div class="summary-header">
+            <h4 style="margin:0; font-size:15px; color:var(--primary-color);">Weekly Workload Overview (${targetTeacher})</h4>
+            <div class="total-load-badge">Total Class Load: ${totalLoad} Periods/Week</div>
+          </div>
+          <div class="summary-grid">
+            ${badgesHtml}
+          </div>
+        `;
+      }
     }
 
     function handlePlanSubmit(event) {
@@ -1549,6 +1697,7 @@
 
     function renderTeacherTable() {
       const tbody = document.getElementById('teachers-table-body');
+      if (!tbody) return;
       tbody.innerHTML = '';
 
       if (localTeachers.length === 0) {
@@ -1682,6 +1831,7 @@
       const savedMatrix = localMatrixSchedules[cleanKey] || {};
 
       const tbody = document.getElementById('schedule-table-body');
+      if (!tbody) return;
       tbody.innerHTML = '';
 
       daysOfWeek.forEach(day => {
@@ -1735,6 +1885,10 @@
       if (!document.getElementById('portal-view').classList.contains('hidden')) {
         if (currentRole === 'hod') {
           renderLiveClassView('hod');
+          const modeSelect = document.getElementById('hod-live-view-mode');
+          if (modeSelect && modeSelect.value === 'daily') {
+            renderDailyLiveClassView();
+          }
         } else {
           renderLiveClassView('teacher');
         }
